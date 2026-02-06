@@ -53,3 +53,4 @@ temp/
 # Mac metadata
 .AppleDouble
 .LSOverride
+docker-compose.yml
