@@ -1,0 +1,55 @@
+# ------------------------------
+# Node modules
+# ------------------------------
+node_modules/
+**/node_modules/
+
+# ------------------------------
+# Environment files
+# ------------------------------
+.env
+.env.*
+!.env.example
+
+# ------------------------------
+# Build outputs
+# ------------------------------
+dist/
+build/
+.next/
+out/
+
+# Typescript
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Coverage
+coverage/
+
+# Temporary files
+tmp/
+temp/
+
+# Docker (optional)
+.dockerignore
+
+# Redis / local db dumps
+*.rdb
+
+# Mac metadata
+.AppleDouble
+.LSOverride
