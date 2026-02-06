@@ -1,10 +1,10 @@
-import ampq from 'amqplib'
+import amqp from 'amqplib'
 
-let channel : ampq.Channel;
+let channel : amqp.Channel;
 
 export const connectRabbitMq = async()=>{
     try {
-        const connection = await ampq.connect({
+        const connection = await amqp.connect({
             protocol:"amqp",
             hostname:process.env.Rabbitmq_HostName,
             port:5672,
@@ -12,10 +12,21 @@ export const connectRabbitMq = async()=>{
             password:process.env.Rabbitmq_Password
         });
 
+        connection.on("close", () => {
+            console.error("RabbitMQ connection closed!");
+        });
+
+        connection.on("error", (err) => {
+            console.error("RabbitMQ error", err);
+        });
+
+
         channel = await connection.createChannel();
         console.log("connected to rabbitmq");
     } catch (error) {
         console.log("failed to connect rabbitmq" , error);
+            process.exit(1);
+
     }
 }
 
