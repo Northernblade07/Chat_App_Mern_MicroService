@@ -5,8 +5,10 @@ import dotenv from 'dotenv'
 dotenv.config();
 
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
+    // host: "smtp.gmail.com",
+    // port: 465,
+    // secure:true,
+    service: "gmail",
     auth: {
         user: process.env.USER,
         pass: process.env.PASSWORD
@@ -24,7 +26,7 @@ export const startSendOtpConsumer = async () => {
         })
 
         let channel = await connection.createChannel();
-
+        console.log(channel)
         const queueName = "send-otp"
 
         await channel.assertQueue(queueName, { durable: true });
@@ -32,11 +34,13 @@ export const startSendOtpConsumer = async () => {
         console.log("mail service consumer started for listening for otp emails")
 
         channel.consume(queueName, async (msg) => {
+
+            console.log(msg)
             if (msg) {
 
                 try {
                     const { to, subject, body } = JSON.parse(msg.content.toString())
-
+                    console.log("this is inside the funciton",to,subject,body)
                     await transporter.sendMail({
                         from: "Chat App",
                         to,

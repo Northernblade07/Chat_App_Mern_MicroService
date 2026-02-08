@@ -10,7 +10,7 @@ const userSchema: Schema<IUser> = new Schema(
 {
     name: {
         type: String,
-        required: true,
+        // required: true,  
         trim: true
     },
 
@@ -23,11 +23,11 @@ const userSchema: Schema<IUser> = new Schema(
         match: [/^\S+@\S+\.\S+$/, 'Invalid email']
     },
 
-    password: {
-        type: String,
-        required: true,
-        select: false
-    }
+    // password: {
+    //     type: String,
+    //     required: true,
+    //     select: false
+    // }
 
 },
 {

@@ -5,10 +5,10 @@ import { startSendOtpConsumer } from './consumer.js';
 dotenv.config();
 const app = express();
 
-startSendOtpConsumer()
+startSendOtpConsumer();
 
 
-const port = process.env.PORT || 5001;
+const port = process.env.PORT || 6002;
 app.listen(port , ()=>{
     console.log(`mail service started on ${port}`)
 })

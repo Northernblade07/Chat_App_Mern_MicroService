@@ -7,34 +7,30 @@ import { connectRabbitMq } from './config/rabbitmq.js';
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 6001;
 
 
 app.use(express.json());
 
-connectRabbitMq();
+
 
 export const redisClient = createClient({
     url:process.env.REDIS_URL!,
 });
 
-redisClient.connect().then(()=>console.log("connected to redis")). catch(console.error);
+
+app.post("/debug", (req, res) => {
+    console.log("BODY:", req.body);
+    res.json({received:true});
+});
 
 app.use("/api/v1",  userRoutes);
 
-
-const startServer = async () => {
-  try {
+    await connectRabbitMq();
     await connectDb();
+    await redisClient.connect();
+    console.log("connected to redis");
 
     app.listen(port, () => {
       console.log(`User service running on port ${port}`);
     });
-
-  } catch (error) {
-    console.error("Failed to start server", error);
-    process.exit(1);
-  }
-};
-
-startServer();
