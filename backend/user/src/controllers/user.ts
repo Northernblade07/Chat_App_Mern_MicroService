@@ -89,7 +89,7 @@ export const verifyUser=TryCatch(async(req , res)=>{
         })
     }
 
-    const token = await generateToken(user);
+    const token = generateToken(user);
 
     res.json({
    message:"User Verified",
@@ -161,12 +161,12 @@ export const getUserByEmail = TryCatch(async(req:AuthenticatedRequest , res:Resp
 
 // get all users
 export const getAllUser = TryCatch(async(req:AuthenticatedRequest , res:Response)=>{
-    const users = await User.find();
+const users = await User.find().select("_id name email");
      res.json(users);
 }) ;
 
 export const getUserById = TryCatch(async(req , res)=>{
-    const user = User.findById(req.params.id);
+    const user =await User.findById(req.params.id);
 
     if(!user){
         res.status(404).json({
