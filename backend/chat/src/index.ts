@@ -6,14 +6,34 @@ import chatRouter from './routes/chat.js'
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 6003;
+const port = process.env.PORT||6005;
 
 app.use(express.json());
 
+
+app.get("/health", (req,res)=>{
+    res.send("chat alive");
+});
+
 app.use("/api/v1",chatRouter)
 
-await connectDb();
+const startServer = async () => {
+    try {
 
-app.listen(port , ()=>{
-    console.log(`Chat service running on ${port}`)
-})
+        await connectDb();
+        console.log("✅ DB connected");
+
+        app.listen(port, () => {
+            console.log(`✅ Chat service running on ${port}`);
+        });
+
+    } catch (error) {
+
+        console.error("🔥 CHAT SERVICE FAILED TO START");
+        console.error(error);
+
+        process.exit(1);
+    }
+};
+
+startServer();
