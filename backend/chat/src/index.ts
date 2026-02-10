@@ -2,7 +2,7 @@ import express from 'express'
 import dotenv from 'dotenv'
 import connectDb from './config/db.js';
 import chatRouter from './routes/chat.js'
-
+import cors from 'cors'
 dotenv.config();
 
 const app = express();
@@ -10,6 +10,7 @@ const port = process.env.PORT||6005;
 
 app.use(express.json());
 
+app.use(cors())
 
 app.get("/health", (req,res)=>{
     res.send("chat alive");
