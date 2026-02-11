@@ -91,26 +91,26 @@ export const AppProvider:React.FC<AppProviderProps> = ({children})=>{
     async function fetchChats() {
         const token = getToken();
         try {
-            const {data} = await axios.get(`${chat_service}/api/v1/chats/all`,{
+            const {data} = await axios.get(`${chat_service}/api/v1/chat/all`,{
                 headers:{
                     Authorization:`Bearer ${token}`
                 }
             })
-
+            
             setChats(data.chats);
-
+            console.log(chats)
         } catch (error) {
             console.log(error)
         }
     }
 
 
-    const [users,setUsers] = useState<User[]|null>(null)
+    const [users,setUsers] = useState<User[]|null>([])
 
     async function fetchUsers() {
         const token = getToken();
         try {
-            const {data} = await axios.get(`${user_service}/api/v1/user/all`,{
+            const {data} = await axios.get(`${user_service}/api/v1/users/all`,{
                 headers:{
                     Authorization:`Bearer ${token}`
                 }

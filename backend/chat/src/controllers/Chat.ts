@@ -48,7 +48,7 @@ export const getAllChats = TryCatch(async(req:AuthenticatedRequest ,res:Response
             message:"UserId is missing"
         });
         return;
-    }
+    }   
 
     const chats = await Chat.find({
         users:userId

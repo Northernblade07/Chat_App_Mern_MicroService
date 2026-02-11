@@ -14,7 +14,7 @@ import { useAppData } from "@/context/AppContext"
 import Loading from "@/components/Loading"
 export default function VerifyPage() {
 
-  const {isAuth , user ,setIsAuth , setUser , loading:userLoading} = useAppData();
+  const {isAuth , user ,setIsAuth , setUser , loading:userLoading , fetchChats , fetchUsers} = useAppData();
 
   const router = useRouter()
   const params = useSearchParams()
@@ -84,7 +84,7 @@ export default function VerifyPage() {
       const toastId = toast.loading("Verifying...")
 
         const {data} =  await axios.post(
-        "http://localhost:6001/api/v1/verify",
+        "http://localhost:6001/api/v1/verfify",
         {
           email,
           otp: finalOtp
@@ -102,6 +102,8 @@ export default function VerifyPage() {
       setOtp(["","","","","",""]);
       setUser(data.user)
       setIsAuth(true)
+      fetchUsers()
+      fetchChats()
       router.push("/chat")
       
 
