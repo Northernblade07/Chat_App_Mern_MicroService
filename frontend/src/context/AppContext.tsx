@@ -124,9 +124,11 @@ export const AppProvider:React.FC<AppProviderProps> = ({children})=>{
 
     useEffect(()=>{
         const getuser = async()=>{
-            fetchUser();
-            fetchChats();
-            fetchUsers();
+            await Promise.all([
+                fetchUser(),
+                fetchChats(),
+                fetchUsers()
+            ]);
         }
         getuser();
     },[])

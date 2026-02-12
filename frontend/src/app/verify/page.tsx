@@ -81,10 +81,8 @@ export default function VerifyPage() {
 
       setLoading(true)
 
-      const toastId = toast.loading("Verifying...")
-
         const {data} =  await axios.post(
-        "http://localhost:6001/api/v1/verfify",
+        "http://localhost:6001/api/v1/verify",
         {
           email,
           otp: finalOtp
@@ -98,15 +96,16 @@ export default function VerifyPage() {
         path:"/"
     // might have to false secure because of aws deployement , no issue for render deployment
       })
-      toast.success("Login successful", { id: toastId })
+      toast.success("Login successful")
       setOtp(["","","","","",""]);
       setUser(data.user)
       setIsAuth(true)
-      fetchUsers()
-      fetchChats()
-      router.push("/chat")
+     await Promise.all([
+  fetchUsers(),
+  fetchChats()
+])
+ router.replace("/chat")
       
-
     }catch(err){
         console.log(err)
       toast.error(
@@ -168,7 +167,7 @@ useEffect(() => {
 }, [timer])
 
 if(isAuth){
-  redirect("/chat");
+  router.replace("/chat");
 }
 
 if(userLoading){

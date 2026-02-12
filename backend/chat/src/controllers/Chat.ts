@@ -293,3 +293,56 @@ export const getMessagesByChat=TryCatch(async(req:AuthenticatedRequest,res:Respo
         });
      }
 })
+
+export const updateMessage= TryCatch(async(req:AuthenticatedRequest,res:Response)=>{
+    const UserId = req.user?._id;
+    const {id} = req.params;
+    const {text} = req.body;
+    
+    const message = await Messages.findById(id);
+     
+    if(!message){
+        res.status(404).json({
+            message:"message not found",
+        })
+        return;
+    }
+
+    if(message.sender!==UserId){
+        res.status(401).json({
+            message:"you are not allowed to update the message",
+        })
+        return;
+    }
+
+    message.text = text;
+    await message.save();
+    res.json({message})
+
+})
+
+
+export const deleteMessage = TryCatch(async(req:AuthenticatedRequest , res:Response)=>{
+    const userId = req.user?._id
+
+    const {id} = req.params;
+
+    const message = await Messages.findById(id);
+
+    if(!message){
+        res.status(404).json({
+            message:"message not found"
+        });
+        return;
+    }
+
+    if(message.sender !== userId){
+        res.status(403).json({
+            message:"Not allowed"
+        });
+        return;
+    }
+
+    await message.deleteOne();
+    res.json({success:true});
+})

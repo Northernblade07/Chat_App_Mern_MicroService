@@ -95,12 +95,11 @@ const Sidebar = ({
             <div className="flex-1 overflow-y-auto">
               {users
                 ?.filter(
-                  (u) =>
+                  (u) =>(
                     u._id !== user?._id &&
-                    u.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    u.name.toLowerCase().includes(searchQuery.toLowerCase()))
                 )
                 .map((u) => {
-
                   const chat = chatMap.get(u._id)
                   const unseen = chat?.unseenCount ?? 0
                   const latestMessage = chat?.latestMessage?.text
