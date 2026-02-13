@@ -15,6 +15,7 @@ import { getToken } from "../lib/authCookie"
 import axios from "axios"
 import Image from "next/image"
 import { SocketData } from "@/context/SocketContext"
+import Link from "next/link"
 
 export interface Message {
   _id: string
@@ -41,8 +42,8 @@ const Page = () => {
     fetchChats
   } = useAppData()
 
-  const {socket , onlineUsers} = SocketData();
-  console.log(onlineUsers)
+  const { socket, onlineUsers } = SocketData();
+
 
   const router = useRouter()
 
@@ -56,7 +57,7 @@ const Page = () => {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null)
 
 
-const isTypingRef = useRef(false);
+  const isTypingRef = useRef(false);
 
   useEffect(() => {
     if (window.innerWidth >= 760) {
@@ -73,11 +74,6 @@ const isTypingRef = useRef(false);
   const [typingTimeOut, setTypingTimeOut] =
     useState<NodeJS.Timeout | null>(null)
 
-  useEffect(() => {
-    if (!isAuth && !loading) {
-      router.push("/login")
-    }
-  }, [isAuth, loading])
 
 
   useEffect(() => {
@@ -145,19 +141,19 @@ const isTypingRef = useRef(false);
 
     if ((!message.trim() && !selectedImage) || !selectedUser || !loggedInUser) return
 
-// socket work
-  if (isTypingRef.current) {
-  isTypingRef.current = false;
+    // socket work
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
 
-  socket?.emit("stopTyping", {
-    chatId: selectedUser,
-    userId: loggedInUser?._id,
-  });
-}
+      socket?.emit("stopTyping", {
+        chatId: selectedUser,
+        userId: loggedInUser?._id,
+      });
+    }
 
-if (typingTimeOut) {
-  clearTimeout(typingTimeOut);
-}
+    if (typingTimeOut) {
+      clearTimeout(typingTimeOut);
+    }
 
 
 
@@ -189,7 +185,7 @@ if (typingTimeOut) {
       )
 
       // instantly update UI
-      setMessages(prev => [...prev, data.message])
+      // setMessages(prev => [...prev, data.message])
 
       // clear states
       setMessage("")
@@ -272,116 +268,120 @@ if (typingTimeOut) {
     }
   }
 
-const handleTyping = (value: string) => {
-  setMessage(value);
+  const handleTyping = (value: string) => {
+    setMessage(value);
 
-  if (!socket || !selectedUser || !loggedInUser) return;
+    if (!socket || !selectedUser || !loggedInUser) return;
 
-  if (!isTypingRef.current) {
-    isTypingRef.current = true;
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
 
-    socket.emit("typing", {
-      chatId: selectedUser,
-      userId: loggedInUser._id,
-    });
-  }
+      socket.emit("typing", {
+        chatId: selectedUser,
+        userId: loggedInUser._id,
+      });
+    }
 
-  if (typingTimeOut) {
-    clearTimeout(typingTimeOut);
-  }
+    if (typingTimeOut) {
+      clearTimeout(typingTimeOut);
+    }
 
-  const timeout = setTimeout(() => {
-    isTypingRef.current = false;
+    const timeout = setTimeout(() => {
+      isTypingRef.current = false;
 
-    socket.emit("stopTyping", {
-      chatId: selectedUser,
-      userId: loggedInUser._id,
-    });
-  }, 2000);
+      socket.emit("stopTyping", {
+        chatId: selectedUser,
+        userId: loggedInUser._id,
+      });
+    }, 2000);
 
-  setTypingTimeOut(timeout);
-};
+    setTypingTimeOut(timeout);
+  };
 
-  useEffect(()=>{
+  useEffect(() => {
+    socket?.on("newMessage", (message) => {
+      console.log("Recieved new message", message);
+setMessages(prev => {
+      // Ignore messages from other chats
+      if (message.chatId !== selectedUser) return prev;
 
-    socket?.on("newMessage",(message)=>{
-      console.log("Recieved new message",message);
+      // Prevent duplicates
+      if (prev.some(m => m._id === message._id)) return prev;
 
-      if(selectedUser===message.chatId){
-        setMessages((prev)=>{
-          const currentMessages = prev||[];
-          const messageExists = currentMessages.some(
-            (msg)=>msg._id === message._id
-          )
-
-          if(!messageExists){
-            return [...currentMessages,message]
-          }
-
-          return currentMessages;
+      return [...prev, message];
         })
-      }
     })
 
 
-    socket?.on("userTyping",(data)=>{
-      console.log("recieved user typing",data);
-      if(data.chatId===selectedUser && data.userId!==loggedInUser?._id){
-        setTyping(true)
-      }
-    })
-
-    socket?.on("userStoppedTyping",(data)=>{
-      console.log("recieved user stopped typing",data);
-      if(data.chatId===selectedUser && data.userId!==loggedInUser?._id){
-        setTyping(false)
-      }   
+    socket?.on("messageSeen", (data) => {
+      setMessages(prev => prev.map(msg => data.messageIds.includes(msg._id) ? { ...msg, seen: true } : msg));
     });
-
-    return()=>{
+    socket?.on("userTyping", (data) => {
+      console.log("recieved user typing", data);
+      if (data.chatId === selectedUser && data.userId !== loggedInUser?._id) { setTyping(true) }
+    })
+    socket?.on("userStoppedTyping", (data) => {
+      console.log("recieved user stopped typing", data);
+      if (data.chatId === selectedUser && data.userId !== loggedInUser?._id) {
+        setTyping(false)
+      }
+    });
+    return () => {
       socket?.off("userTyping");
       socket?.off("userStoppedTyping");
       socket?.off("newMessage")
     }
-  },[socket,selectedUser,loggedInUser?._id])
-
-
+  }, [socket, selectedUser, loggedInUser?._id])
   // handle auto scroll 
 
   const bottomRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
-  bottomRef.current?.scrollIntoView({
-    behavior: "smooth",
-  })
-}, [messages,typing])
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    })
+  }, [messages, typing, socket])
 
 
   useEffect(() => {
     setTyping(false);
-isTypingRef.current = false;
-if (typingTimeOut) clearTimeout(typingTimeOut);
-    if (selectedUser) {
-      async function getMesssage() {
-        fetchMessage();
-        setTyping(false);
-        socket?.emit("joinChat",selectedUser);
-      }
-      getMesssage();
+    if (!socket || !selectedUser) return;
 
-      return()=>{
-        socket?.emit("leaveChat",selectedUser);
-        setMessages([]);
-      }
+    isTypingRef.current = false;
+    if (typingTimeOut) clearTimeout(typingTimeOut);
+
+    if (!socket.connected) {
+      socket.once("connect", () => {
+        socket.emit("joinChat", selectedUser);
+      });
+    } else {
+      socket.emit("joinChat", selectedUser);
     }
-  }, [selectedUser,socket])
+    async function getMesssage() {
+      fetchMessage();
+      setTyping(false);
+      // socket?.emit("joinChat",selectedUser);
+    }
+    getMesssage();
+    return () => {
+      socket?.emit("leaveChat", selectedUser);
+      setMessages([]);
+    }
+  }, [selectedUser, socket])
 
-  if (loading) return <Loading />
+  
+  useEffect(() => {
+    if (!isAuth && !loading) {
+      router.push("/login")
+    }
+  }, [isAuth, loading,router])
+
+  if (loading) return<Loading />;
 
   return (
     <div className="h-screen flex bg-white dark:bg-black overflow-hidden">
 
       {/* SIDEBAR */}
-      <Sidebar
+      {loggedInUser && <Sidebar
         users={users}
         selectedUser={selectedUser}
         setselectedUser={setselectedUser}
@@ -390,9 +390,8 @@ if (typingTimeOut) clearTimeout(typingTimeOut);
         user={loggedInUser}
         chats={chats}
         createChat={createChat}
-        onlineUsers={onlineUsers}
       />
-
+      }
 
       {/* CHAT AREA */}
       <div className="flex-1 flex flex-col">
@@ -445,17 +444,41 @@ if (typingTimeOut) clearTimeout(typingTimeOut);
           </div>
 
           {/* RIGHT */}
-          <div className="flex items-center gap-3">
-            <ThemeToggle />
+         <div className="flex items-center gap-2">
 
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={logoutUser}
-            >
-              <LogOut size={18} />
-            </Button>
-          </div>
+  <ThemeToggle />
+
+  {/* PROFILE BUTTON */}
+  <Link href="/profile">
+    <Button
+      variant="ghost"
+      className="
+        flex items-center gap-2
+        rounded-full
+        px-1  
+        hover:bg-indigo-500/10
+        transition
+      "
+    >
+      <UserCircle size={22} height={25}/>
+
+      <span className="hidden md:block font-medium">
+        {loggedInUser?.name}
+      </span>
+    </Button>
+  </Link>
+
+  {/* LOGOUT */}
+  <Button
+    size="icon"
+    variant="ghost"
+    onClick={logoutUser}
+  >
+    <LogOut size={18} />
+  </Button>
+
+</div>
+
 
         </div>
 
@@ -534,30 +557,30 @@ if (typingTimeOut) clearTimeout(typingTimeOut);
 
 
 
-                   {msg.text && (
-  <p className="text-base break-words whitespace-pre-wrap leading-relaxed">
-    {msg.text}
-  </p>
-)}
+                    {msg.text && (
+                      <p className="text-base break-words whitespace-pre-wrap leading-relaxed">
+                        {msg.text}
+                      </p>
+                    )}
 
 
                     {/* Seen indicator */}
-                  
 
-   <div className="flex justify-end items-center gap-1 mt-1 w-full">
-  <span className="text-[11px] opacity-70">
-    {new Date(msg.createdAt).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    })}
-  </span>
 
-  {isMe && (
-    <span className="text-[11px]">
-      {msg.seen ? "✓✓" : "✓"}
-    </span>
-  )}
-</div>
+                    <div className="flex justify-end items-center gap-1 mt-1 w-full">
+                      <span className="text-[11px] opacity-70">
+                        {new Date(msg.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+
+                      {isMe && (
+                        <span className="text-[11px]">
+                          {msg.seen ? "✓✓" : "✓"}
+                        </span>
+                      )}
+                    </div>
 
 
                   </div>
@@ -567,48 +590,48 @@ if (typingTimeOut) clearTimeout(typingTimeOut);
           </AnimatePresence>
 
           {typing && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="flex justify-start mb-2"
-  >
-    <div className="px-4 py-2 rounded-xl bg-zinc-200 dark:bg-zinc-800">
-      <motion.div
-        className="flex gap-1 mb-2"
-        initial="start"
-        animate="animate"
-      >
-        <motion.span
-          className="w-2 h-2 bg-gray-500 rounded-full"
-          variants={{
-            start: { y: 0 },
-            animate: { y: [0, -5, 0] }
-          }}
-          transition={{ repeat: Infinity, duration: 0.6 }}
-        />
-        <motion.span
-          className="w-2 h-2 bg-gray-500 rounded-full"
-          variants={{
-            start: { y: 0 },
-            animate: { y: [0, -5, 0] }
-          }}
-          transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
-        />
-        <motion.span
-          className="w-2 h-2 bg-gray-500 rounded-full"
-          variants={{
-            start: { y: 0 },
-            animate: { y: [0, -5, 0] }
-          }}
-          transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
-        />
-      </motion.div>
-    </div>
-  </motion.div>
-)}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start mb-2"
+            >
+              <div className="px-4 py-2 rounded-xl bg-zinc-200 dark:bg-zinc-800">
+                <motion.div
+                  className="flex gap-1 mb-2"
+                  initial="start"
+                  animate="animate"
+                >
+                  <motion.span
+                    className="w-2 h-2 bg-gray-500 rounded-full"
+                    variants={{
+                      start: { y: 0 },
+                      animate: { y: [0, -5, 0] }
+                    }}
+                    transition={{ repeat: Infinity, duration: 0.6 }}
+                  />
+                  <motion.span
+                    className="w-2 h-2 bg-gray-500 rounded-full"
+                    variants={{
+                      start: { y: 0 },
+                      animate: { y: [0, -5, 0] }
+                    }}
+                    transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+                  />
+                  <motion.span
+                    className="w-2 h-2 bg-gray-500 rounded-full"
+                    variants={{
+                      start: { y: 0 },
+                      animate: { y: [0, -5, 0] }
+                    }}
+                    transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
+          )}
 
           <div ref={bottomRef} />
-            
+
         </div>
 
         {/* INPUT */}
@@ -672,7 +695,7 @@ if (typingTimeOut) clearTimeout(typingTimeOut);
                   editingMessage ? handleUpdateMessage() : sendMessage(e)
                 }
               }}
-             onChange={(e) => handleTyping(e.target.value)}
+              onChange={(e) => handleTyping(e.target.value)}
             />
 
             <Button onClick={() => {

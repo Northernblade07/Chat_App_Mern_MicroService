@@ -14,7 +14,7 @@ import { useAppData } from "@/context/AppContext"
 import Loading from "@/components/Loading"
 export default function VerifyPage() {
 
-  const {isAuth , user ,setIsAuth , setUser , loading:userLoading , fetchChats , fetchUsers} = useAppData();
+  const {isAuth , user ,setIsAuth , setUser , loading:userLoading , fetchChats , fetchUsers,fetchUser} = useAppData();
 
   const router = useRouter()
   const params = useSearchParams()
@@ -96,13 +96,12 @@ export default function VerifyPage() {
         path:"/"
     // might have to false secure because of aws deployement , no issue for render deployment
       })
+      await fetchUser()
       toast.success("Login successful")
       setOtp(["","","","","",""]);
-      setUser(data.user)
-      setIsAuth(true)
-     await Promise.all([
-  fetchUsers(),
-  fetchChats()
+      await Promise.all([
+        fetchUsers(),
+        fetchChats()
 ])
  router.replace("/chat")
       
@@ -166,9 +165,13 @@ useEffect(() => {
   return () => clearInterval(interval)
 }, [timer])
 
-if(isAuth){
-  router.replace("/chat");
-}
+
+useEffect(() => {
+  if(isAuth){
+    router.replace("/chat");
+  }
+},[isAuth,router])
+
 
 if(userLoading){
   return <Loading/>

@@ -29,7 +29,20 @@
             console.log(`User ${userId} mapped to socket ${socket.id}`)
         }
 
-        io.emit("getOnlineUser",Object.keys(userSocketMap));
+        // io.emit("getOnlineUser",Object.keys(userSocketMap));
+
+        const onlineUsers = Object.keys(userSocketMap);
+
+    // ✅ 1. Immediately send presence to THIS socket
+    socket.emit("getOnlineUser", onlineUsers);
+
+    // ✅ 2. Broadcast to everyone else
+    socket.broadcast.emit("getOnlineUser", onlineUsers);
+
+    // ✅ 3. Allow clients to manually request presence
+    socket.on("requestOnlineUsers", () => {
+        socket.emit("getOnlineUser", Object.keys(userSocketMap));
+    });
 
         if(userId){
             socket.join(userId)

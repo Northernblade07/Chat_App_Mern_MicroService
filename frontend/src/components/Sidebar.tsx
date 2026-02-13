@@ -17,7 +17,6 @@ type SidebarProps = {
   setSideBarOpen: Dispatch<SetStateAction<boolean>>
   user: User | null
   createChat: (user: User) => Promise<void>
-  onlineUsers:string[]
 }
 
 const Sidebar = ({
@@ -31,7 +30,7 @@ const Sidebar = ({
   createChat,
 }: SidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("")
-  const {onlineUsers} = SocketData()
+  const {onlineUsers} = SocketData();
   
   console.log("online",onlineUsers)
   // userId -> chat
@@ -139,7 +138,7 @@ const Sidebar = ({
                     >
                       <UserCircle className="w-6 h-6 dark:text-gray-300"/>
                       
-  {onlineUsers.includes(u._id.toString()) && (
+  {onlineUsers.has(u._id) && (
       <span className="w-3 h-3 bg-green-500 rounded-full border border-black"/>
    )}
 
@@ -152,7 +151,7 @@ const Sidebar = ({
 
                         {latestMessage && (
                           <p className="font-semibold text-indigo-400 truncate">
-                            {onlineUsers.includes(u._id)?"online":"offline"}
+                            {onlineUsers.has(u._id)?"online":"offline"}
                           </p>
                         )}
                       </div>

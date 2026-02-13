@@ -1,69 +1,87 @@
-    "use client"
+  "use client";
 
-    import { createContext, ReactNode, useContext, useEffect, useState } from "react";
-    import { io, Socket } from "socket.io-client"
-    import { chat_service, useAppData } from "./AppContext";
+  import {
+    createContext,
+    ReactNode,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+  } from "react";
+  import { io, Socket } from "socket.io-client";
+  import { chat_service, useAppData } from "./AppContext";
 
-    interface SocketContextType{
-        socket: Socket|null;
-        onlineUsers:string[]
-    }
+  interface SocketContextType {
+    socket: Socket | null;
+    onlineUsers: Set<string>;
+  }
 
-    const SocketContext = createContext<SocketContextType>({
-        socket:null,
-        onlineUsers:[]
-    });
+  const SocketContext = createContext<SocketContextType>({
+    socket: null,
+    onlineUsers: new Set(),
+  });
 
-    interface ProviderProps{
-        children:ReactNode;
-    }
-
-    export const SocketProvider = ({children}:ProviderProps)=>{
-
-        const[socket , setSocket] = useState<Socket|null>(null);
-        const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
-        const {user} = useAppData();
-
-      useEffect(()=>{
-
-    if(!user?._id) return;
-
-    const newSocket = io(chat_service,{
-        query:{ userId:user._id }
-    });
-
-    // ✅ attach FIRST
-    newSocket.on("connect", () => {
-        console.log("socket connected");
-    });
-
-    newSocket.on("getOnlineUser",(users:string[])=>{
-        console.log("ONLINE USERS RECEIVED:", users);
-        setOnlineUsers(users);
-    });
-    socketSetting();
-    async function socketSetting() {
-        setSocket(newSocket);
-    }
-    return()=>{
-        newSocket.disconnect();
-    }
-
-},[user?._id]);
+  export const SocketProvider = ({ children }: { children: ReactNode }) => {
+    const { user, loading } = useAppData();
 
 
-useEffect(() => {
-    console.log(onlineUsers,"online");
-}, [onlineUsers]);
+    const socketRef = useRef<Socket | null>(null);
 
-if(!user?._id){
-    return<>{children}</>; // wait until user exists
-}
+    // ONLY for UI
+    const [socket, setSocket] = useState<Socket | null>(null);
+   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
 
 
-        return <SocketContext.Provider value={{socket,onlineUsers}}>
-            {children}
-        </SocketContext.Provider>
-    };
 
-    export const SocketData=()=>useContext(SocketContext)
+
+    useEffect(() => {
+      if (!user?._id||loading) return;
+  
+      // 🔥 ALWAYS destroy old socket when user changes
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+
+      console.log("🚀 Creating NEW socket for:", user._id);
+
+      const socketInstance = io(chat_service, {
+        transports: ["websocket"],
+        query: { userId: user._id },
+      });
+
+      socketRef.current = socketInstance;
+      setSocket(socketInstance);
+
+      socketInstance.on("connect", () => {
+        console.log("✅ Socket connected:", socketInstance.id);
+          socketInstance.emit("requestOnlineUsers");
+      });
+
+     socketInstance.on("getOnlineUser", (users: string[]) => {
+      console.log("")
+setOnlineUsers(prev => new Set(users));
+  });
+
+      socketInstance.on("disconnect", () => {
+        console.log("🔴 Socket disconnected");
+        setOnlineUsers(new Set()); // prevents ghost online users
+      });
+
+      return () => {
+        console.log("🧹 Cleaning socket");
+
+        socketInstance.disconnect();
+        socketRef.current = null;
+        setSocket(null);
+        setOnlineUsers(new Set());
+      };
+    }, [user?._id]);
+
+    return (
+      <SocketContext.Provider value={{ socket, onlineUsers }}>
+        {children}
+      </SocketContext.Provider>
+    );
+  };
+
+  export const SocketData = () => useContext(SocketContext);

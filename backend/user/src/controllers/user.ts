@@ -159,11 +159,24 @@ export const getUserByEmail = TryCatch(async(req:AuthenticatedRequest , res:Resp
     res.json(user);
 })
 
-// get all users
-export const getAllUser = TryCatch(async(req:AuthenticatedRequest , res:Response)=>{
-const users = await User.find().select("_id name email");
-     res.json(users);
-}) ;
+// get all users (excluding logged in user)
+export const getAllUser = TryCatch(async (req: AuthenticatedRequest, res: Response) => {
+
+    const loggedInUserId = req.user?._id;
+
+    if (!loggedInUserId) {
+        res.status(401).json({
+            message: "Unauthorized"
+        });
+        return;
+    }
+
+    const users = await User.find({
+        _id: { $ne: loggedInUserId } 
+    }).select("_id name email").lean();
+
+    res.json(users);
+});
 
 export const getUserById = TryCatch(async(req , res)=>{
     const user =await User.findById(req.params.id);

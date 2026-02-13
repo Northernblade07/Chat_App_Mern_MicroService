@@ -214,9 +214,9 @@ export const sendMessage = TryCatch(async(req:AuthenticatedRequest , res:Respons
 
     const senderSocketId = getRecieverSocketId(senderId.toString())
 
-    if(senderSocketId){
-        io.to(senderSocketId).emit("newMessage",savedMessage)
-    }
+    // if(senderSocketId){
+    //     io.to(senderSocketId).emit("newMessage",savedMessage)
+    // }
     if(isRecieverInChatRoom && senderSocketId){
         io.to(senderSocketId).emit("messageSeen",{
             chatId:chatId,

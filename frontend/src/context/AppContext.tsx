@@ -6,6 +6,7 @@ import { getToken } from "@/app/lib/authCookie";
 import toast from "react-hot-toast";
 import { redirect, useRouter } from "next/navigation";
 import { Router } from "next/router";
+import { Flag } from "lucide-react";
 export const user_service = "http://localhost:6001";
 export const chat_service ="http://localhost:6005";
 
@@ -46,6 +47,7 @@ interface AppContextType{
     chats:Chats[]|null;
     users:User[]|null;
     setChats:React.Dispatch<React.SetStateAction<Chats[] | null>>
+    fetchUser:()=>Promise<void  >
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -57,12 +59,10 @@ interface AppProviderProps{
 export const AppProvider:React.FC<AppProviderProps> = ({children})=>{
     const [user , setUser] = useState<User|null>(null);
     const [isAuth , setIsAuth] = useState<boolean>(false);
-    const [loading , setLoading] = useState<boolean>(true);
-    const router = useRouter()
+    const [loading , setLoading] = useState<boolean>(false);
     async function fetchUser() {
         try {
             const token = getToken();
-            setLoading(true);
              if(!token || token === null){
                 setLoading(false)
             setIsAuth(false)
@@ -77,7 +77,6 @@ export const AppProvider:React.FC<AppProviderProps> = ({children})=>{
 
             setUser(data);
             setIsAuth(true);
-            setLoading(false);
         } catch (error) {
             console.log(error);
             setLoading(false)
@@ -141,17 +140,31 @@ export const AppProvider:React.FC<AppProviderProps> = ({children})=>{
     }
 
     useEffect(()=>{
+        const token = getToken();
         const getuser = async()=>{
-            await Promise.all([
-                fetchUser(),
-                fetchChats(),
-                fetchUsers()
-            ]);
+            if(token){
+                try {
+                    await Promise.all([
+                    fetchUser(),
+                    fetchChats(),
+                    fetchUsers()
+                ]);
+                } catch (error) {
+                    console.log(error)
+                } finally{
+                    setLoading(false)
+                }
+                await Promise.all([
+                    fetchUser(),
+                    fetchChats(),
+                    fetchUsers()
+                ]);
+            }
         }
         getuser();
     },[])
 
-    return <AppContext.Provider value={{user , setUser , isAuth ,setIsAuth , loading , logoutUser , setChats ,chats ,fetchChats, fetchUsers,users }}>
+    return <AppContext.Provider value={{user , setUser , isAuth ,setIsAuth , loading , logoutUser , setChats ,chats ,fetchChats, fetchUsers,users ,fetchUser}}>
         {children}
     </AppContext.Provider>
 }
