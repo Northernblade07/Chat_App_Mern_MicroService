@@ -4,6 +4,8 @@ import Cookies from "js-cookie";
 import axios from "axios";
 import { getToken } from "@/app/lib/authCookie";
 import toast from "react-hot-toast";
+import { redirect, useRouter } from "next/navigation";
+import { Router } from "next/router";
 export const user_service = "http://localhost:6001";
 export const chat_service ="http://localhost:6005";
 
@@ -56,12 +58,16 @@ export const AppProvider:React.FC<AppProviderProps> = ({children})=>{
     const [user , setUser] = useState<User|null>(null);
     const [isAuth , setIsAuth] = useState<boolean>(false);
     const [loading , setLoading] = useState<boolean>(true);
-
+    const router = useRouter()
     async function fetchUser() {
         try {
-            setLoading(true);
-
             const token = getToken();
+            setLoading(true);
+             if(!token || token === null){
+                setLoading(false)
+            setIsAuth(false)
+            return;
+        } 
             
             const {data} = await axios.get(`${user_service}/api/v1/me`,{
                 headers:{
@@ -90,6 +96,12 @@ export const AppProvider:React.FC<AppProviderProps> = ({children})=>{
 
     async function fetchChats() {
         const token = getToken();
+        console.log(token)
+        if(!token || token === null){
+            setLoading(false)
+            setIsAuth(false)
+            return;
+        } 
         try {
             const {data} = await axios.get(`${chat_service}/api/v1/chat/all`,{
                 headers:{
@@ -109,6 +121,12 @@ export const AppProvider:React.FC<AppProviderProps> = ({children})=>{
 
     async function fetchUsers() {
         const token = getToken();
+         console.log(token)
+        if(!token || token === null){
+            setIsAuth(false)
+            setLoading(false)
+            return;
+        } 
         try {
             const {data} = await axios.get(`${user_service}/api/v1/users/all`,{
                 headers:{

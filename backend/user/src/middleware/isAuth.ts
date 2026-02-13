@@ -28,7 +28,7 @@ export const isAuth = async (req: AuthenticatedRequest, res: Response, next: Nex
         req.user = decodedValue.user;
         next();
     } catch (error) {
-        console.log("middleware issue");
+        console.log("middleware issue",error);
         res.status(401).json({
             message: "Invalid or expired token"
         });

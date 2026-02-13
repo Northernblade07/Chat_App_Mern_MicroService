@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 import axios from "axios"
 import { redirect, useRouter } from "next/navigation"
 import { MessageCircleCode } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import toast from "react-hot-toast"
 import { useAppData } from "@/context/AppContext"
@@ -47,10 +47,12 @@ export default function LoginPage() {
     }
   }
 
+useEffect(()=>{
+   if(isAuth){
+      router.replace("/chat");
+   }
+},[isAuth,router])
 
-if(isAuth){
-  redirect("/chat");
-}
 
 if(userLoading){
   return <Loading/>

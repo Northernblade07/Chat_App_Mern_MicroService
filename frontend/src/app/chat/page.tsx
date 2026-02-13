@@ -14,6 +14,7 @@ import toast from "react-hot-toast"
 import { getToken } from "../lib/authCookie"
 import axios from "axios"
 import Image from "next/image"
+import { SocketData } from "@/context/SocketContext"
 
 export interface Message {
   _id: string
@@ -40,6 +41,9 @@ const Page = () => {
     fetchChats
   } = useAppData()
 
+  const {socket , onlineUsers} = SocketData();
+  console.log(onlineUsers)
+
   const router = useRouter()
 
   const [selectedUser, setselectedUser] = useState<string | null>(null)
@@ -52,6 +56,7 @@ const Page = () => {
   const [editingMessage, setEditingMessage] = useState<Message | null>(null)
 
 
+const isTypingRef = useRef(false);
 
   useEffect(() => {
     if (window.innerWidth >= 760) {
@@ -72,7 +77,7 @@ const Page = () => {
     if (!isAuth && !loading) {
       router.push("/login")
     }
-  }, [isAuth, router, loading])
+  }, [isAuth, loading])
 
 
   useEffect(() => {
@@ -139,6 +144,22 @@ const Page = () => {
     if (e) e.preventDefault()
 
     if ((!message.trim() && !selectedImage) || !selectedUser || !loggedInUser) return
+
+// socket work
+  if (isTypingRef.current) {
+  isTypingRef.current = false;
+
+  socket?.emit("stopTyping", {
+    chatId: selectedUser,
+    userId: loggedInUser?._id,
+  });
+}
+
+if (typingTimeOut) {
+  clearTimeout(typingTimeOut);
+}
+
+
 
     const token = getToken()
 
@@ -251,6 +272,80 @@ const Page = () => {
     }
   }
 
+const handleTyping = (value: string) => {
+  setMessage(value);
+
+  if (!socket || !selectedUser || !loggedInUser) return;
+
+  if (!isTypingRef.current) {
+    isTypingRef.current = true;
+
+    socket.emit("typing", {
+      chatId: selectedUser,
+      userId: loggedInUser._id,
+    });
+  }
+
+  if (typingTimeOut) {
+    clearTimeout(typingTimeOut);
+  }
+
+  const timeout = setTimeout(() => {
+    isTypingRef.current = false;
+
+    socket.emit("stopTyping", {
+      chatId: selectedUser,
+      userId: loggedInUser._id,
+    });
+  }, 2000);
+
+  setTypingTimeOut(timeout);
+};
+
+  useEffect(()=>{
+
+    socket?.on("newMessage",(message)=>{
+      console.log("Recieved new message",message);
+
+      if(selectedUser===message.chatId){
+        setMessages((prev)=>{
+          const currentMessages = prev||[];
+          const messageExists = currentMessages.some(
+            (msg)=>msg._id === message._id
+          )
+
+          if(!messageExists){
+            return [...currentMessages,message]
+          }
+
+          return currentMessages;
+        })
+      }
+    })
+
+
+    socket?.on("userTyping",(data)=>{
+      console.log("recieved user typing",data);
+      if(data.chatId===selectedUser && data.userId!==loggedInUser?._id){
+        setTyping(true)
+      }
+    })
+
+    socket?.on("userStoppedTyping",(data)=>{
+      console.log("recieved user stopped typing",data);
+      if(data.chatId===selectedUser && data.userId!==loggedInUser?._id){
+        setTyping(false)
+      }   
+    });
+
+    return()=>{
+      socket?.off("userTyping");
+      socket?.off("userStoppedTyping");
+      socket?.off("newMessage")
+    }
+  },[socket,selectedUser,loggedInUser?._id])
+
+
   // handle auto scroll 
 
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -258,17 +353,27 @@ const Page = () => {
   bottomRef.current?.scrollIntoView({
     behavior: "smooth",
   })
-}, [messages])
+}, [messages,typing])
 
 
   useEffect(() => {
+    setTyping(false);
+isTypingRef.current = false;
+if (typingTimeOut) clearTimeout(typingTimeOut);
     if (selectedUser) {
       async function getMesssage() {
         fetchMessage();
+        setTyping(false);
+        socket?.emit("joinChat",selectedUser);
       }
       getMesssage();
+
+      return()=>{
+        socket?.emit("leaveChat",selectedUser);
+        setMessages([]);
+      }
     }
-  }, [selectedUser])
+  }, [selectedUser,socket])
 
   if (loading) return <Loading />
 
@@ -285,6 +390,7 @@ const Page = () => {
         user={loggedInUser}
         chats={chats}
         createChat={createChat}
+        onlineUsers={onlineUsers}
       />
 
 
@@ -459,8 +565,50 @@ const Page = () => {
               )
             })}
           </AnimatePresence>
-          <div ref={bottomRef} />
 
+          {typing && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="flex justify-start mb-2"
+  >
+    <div className="px-4 py-2 rounded-xl bg-zinc-200 dark:bg-zinc-800">
+      <motion.div
+        className="flex gap-1 mb-2"
+        initial="start"
+        animate="animate"
+      >
+        <motion.span
+          className="w-2 h-2 bg-gray-500 rounded-full"
+          variants={{
+            start: { y: 0 },
+            animate: { y: [0, -5, 0] }
+          }}
+          transition={{ repeat: Infinity, duration: 0.6 }}
+        />
+        <motion.span
+          className="w-2 h-2 bg-gray-500 rounded-full"
+          variants={{
+            start: { y: 0 },
+            animate: { y: [0, -5, 0] }
+          }}
+          transition={{ repeat: Infinity, duration: 0.6, delay: 0.2 }}
+        />
+        <motion.span
+          className="w-2 h-2 bg-gray-500 rounded-full"
+          variants={{
+            start: { y: 0 },
+            animate: { y: [0, -5, 0] }
+          }}
+          transition={{ repeat: Infinity, duration: 0.6, delay: 0.4 }}
+        />
+      </motion.div>
+    </div>
+  </motion.div>
+)}
+
+          <div ref={bottomRef} />
+            
         </div>
 
         {/* INPUT */}
@@ -524,22 +672,7 @@ const Page = () => {
                   editingMessage ? handleUpdateMessage() : sendMessage(e)
                 }
               }}
-              onChange={(e) => {
-                setMessage(e.target.value)
-
-                // fake typing logic placeholder
-                setTyping(true)
-
-                if (typingTimeOut) {
-                  clearTimeout(typingTimeOut)
-                }
-
-                const timeout = setTimeout(() => {
-                  setTyping(false)
-                }, 1500)
-
-                setTypingTimeOut(timeout)
-              }}
+             onChange={(e) => handleTyping(e.target.value)}
             />
 
             <Button onClick={() => {

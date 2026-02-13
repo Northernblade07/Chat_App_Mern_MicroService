@@ -3,9 +3,10 @@ import dotenv from 'dotenv'
 import connectDb from './config/db.js';
 import chatRouter from './routes/chat.js'
 import cors from 'cors'
+import { app, server } from './config/socket.js';
 dotenv.config();
 
-const app = express();
+
 const port = process.env.PORT||6005;
 
 app.use(express.json());
@@ -24,7 +25,7 @@ const startServer = async () => {
         await connectDb();
         console.log("✅ DB connected");
 
-        app.listen(port, () => {
+        server.listen(port, () => {
             console.log(`✅ Chat service running on ${port}`);
         });
 

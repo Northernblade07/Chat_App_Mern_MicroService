@@ -6,6 +6,7 @@ import { User, Chats } from "@/context/AppContext"
 import { Input } from "./ui/input"
 import { Button } from "./ui/button"
 import { UserCircle, X } from "lucide-react"
+import { SocketData } from "@/context/SocketContext"
 
 type SidebarProps = {
   users: User[] | null
@@ -16,6 +17,7 @@ type SidebarProps = {
   setSideBarOpen: Dispatch<SetStateAction<boolean>>
   user: User | null
   createChat: (user: User) => Promise<void>
+  onlineUsers:string[]
 }
 
 const Sidebar = ({
@@ -28,9 +30,10 @@ const Sidebar = ({
   user,
   createChat,
 }: SidebarProps) => {
-
   const [searchQuery, setSearchQuery] = useState("")
-
+  const {onlineUsers} = SocketData()
+  
+  console.log("online",onlineUsers)
   // userId -> chat
   const chatMap = useMemo(() => {
     const map = new Map<string, Chats["chat"]>()
@@ -103,7 +106,7 @@ const Sidebar = ({
                   const chat = chatMap.get(u._id)
                   const unseen = chat?.unseenCount ?? 0
                   const latestMessage = chat?.latestMessage?.text
-
+                  console.log(u._id )
                   return (
                     <motion.div
                       key={u._id}
@@ -126,28 +129,30 @@ const Sidebar = ({
                       className={`
                         cursor-pointer px-4 py-3
                         border-b dark:border-zinc-800
-                        transition-colors flex gap-2 items-center justify-start
+                        transition-colors flex gap-2 items-center justify-start rounded-2xl
                         ${
                           selectedUser === chat?._id
-                            ? "bg-indigo-500/10"
+                            ? "dark:bg-indigo-500/10 bg-indigo-200"
                             : "hover:bg-zinc-100 dark:hover:bg-zinc-800"
                         }
                       `}
                     >
-                      <UserCircle className="w-6 h-6 text-gray-300"/>
-
-                      <div />
+                      <UserCircle className="w-6 h-6 dark:text-gray-300"/>
+                      
+  {onlineUsers.includes(u._id.toString()) && (
+      <span className="w-3 h-3 bg-green-500 rounded-full border border-black"/>
+   )}
 
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium">{u.name}</p>
+                        <p className="font-medium dark:text-indigo-300 text-indigo-500">{u.name}</p>
 
-                        <p className="text-xs text-zinc-500 truncate">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 truncate">
                           {u.email}
                         </p>
 
                         {latestMessage && (
                           <p className="font-semibold text-indigo-400 truncate">
-                            {latestMessage}
+                            {onlineUsers.includes(u._id)?"online":"offline"}
                           </p>
                         )}
                       </div>

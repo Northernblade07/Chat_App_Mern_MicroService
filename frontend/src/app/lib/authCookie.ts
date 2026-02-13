@@ -1,5 +1,12 @@
-import Cookies from "js-cookie"
+import Cookies from "js-cookie";
 
 export const getToken = () => {
-  return Cookies.get("token") || null;
-}
+  const token = Cookies.get("token");
+
+  // Guard against garbage values
+  if (!token || token === "undefined" || token === "null") {
+    return;
+  }
+
+  return token;
+};

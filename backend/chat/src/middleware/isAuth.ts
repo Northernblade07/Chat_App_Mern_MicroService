@@ -34,7 +34,7 @@ export const isAuth = async(req:AuthenticatedRequest, res:Response, next:NextFun
 
         next();
     } catch (error) {
-        console.log("Chat service middleware issue");
+        console.log("Chat service middleware issue",error);
         res.status(401).json({
             message:"Please login"
         })

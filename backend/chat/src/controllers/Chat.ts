@@ -4,6 +4,7 @@ import type { AuthenticatedRequest } from "../middleware/isAuth.js";
 import { Chat } from "../models/Chat.js";
 import { Messages } from "../models/Messages.js";
 import axios from "axios";
+import { getRecieverSocketId, io } from "../config/socket.js";
 
 export const createNewChat = TryCatch(async(req:AuthenticatedRequest , res:Response)=>{
     const userId = req.user?._id;
@@ -158,14 +159,21 @@ export const sendMessage = TryCatch(async(req:AuthenticatedRequest , res:Respons
     }
 
     // socker setup
-
+    const recieverSocketId = getRecieverSocketId(otherUserId.toString())
+    let isRecieverInChatRoom=false;
+    if(recieverSocketId){
+        const recieverScoket = io.sockets.sockets.get(recieverSocketId)
+        if(recieverScoket && recieverScoket.rooms.has(chatId)){
+            isRecieverInChatRoom= true;
+        }
+    }
 
 
     let messageData:any={
         chatId:chatId,
         sender:senderId,
-        seen:false,
-        seenAt:undefined,
+        seen:isRecieverInChatRoom,
+        seenAt:isRecieverInChatRoom?new Date():undefined,
     };
 
     if(imageFile){
@@ -198,7 +206,24 @@ export const sendMessage = TryCatch(async(req:AuthenticatedRequest , res:Respons
 
 
     //  emit to sockets
+    io.to(chatId).emit("newMessage",savedMessage);
 
+    if(recieverSocketId){
+        io.to(recieverSocketId).emit("newMessage",savedMessage);
+    }
+
+    const senderSocketId = getRecieverSocketId(senderId.toString())
+
+    if(senderSocketId){
+        io.to(senderSocketId).emit("newMessage",savedMessage)
+    }
+    if(isRecieverInChatRoom && senderSocketId){
+        io.to(senderSocketId).emit("messageSeen",{
+            chatId:chatId,
+            seenBy:otherUserId,
+            messageIds:[savedMessage._id]
+        })
+    }
 
     res.status(201).json({
         message:savedMessage,
@@ -279,6 +304,17 @@ export const getMessagesByChat=TryCatch(async(req:AuthenticatedRequest,res:Respo
         }
 
         // socket work
+
+        if(messagesToMarkSeen.length>0){
+            const otherUserSocketId = getRecieverSocketId(otherUserId.toString());
+            if(otherUserSocketId){
+                io.to(otherUserSocketId).emit("messageSeen",{
+                    chatId:chatId,
+                    seenBy:userId,
+                    messageIds:messagesToMarkSeen.map((msg)=>msg._id)
+                });
+            }
+        }
 
         res.json({
             messages,
