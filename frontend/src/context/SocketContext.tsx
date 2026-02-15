@@ -13,12 +13,12 @@
 
   interface SocketContextType {
     socket: Socket | null;
-    onlineUsers: Set<string>;
+    onlineUsers: string[];
   }
 
   const SocketContext = createContext<SocketContextType>({
     socket: null,
-    onlineUsers: new Set(),
+    onlineUsers:[],
   });
 
   export const SocketProvider = ({ children }: { children: ReactNode }) => {
@@ -29,7 +29,7 @@
 
     // ONLY for UI
     const [socket, setSocket] = useState<Socket | null>(null);
-   const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
+   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
 
 
@@ -58,13 +58,13 @@
       });
 
      socketInstance.on("getOnlineUser", (users: string[]) => {
-      console.log("")
-setOnlineUsers(prev => new Set(users));
+      console.log(users,"gettingusersonine")
+      setOnlineUsers([...users]);
   });
 
       socketInstance.on("disconnect", () => {
         console.log("🔴 Socket disconnected");
-        setOnlineUsers(new Set()); // prevents ghost online users
+        setOnlineUsers([]); // prevents ghost online users
       });
 
       return () => {
@@ -73,7 +73,7 @@ setOnlineUsers(prev => new Set(users));
         socketInstance.disconnect();
         socketRef.current = null;
         setSocket(null);
-        setOnlineUsers(new Set());
+        setOnlineUsers([]);
       };
     }, [user?._id]);
 

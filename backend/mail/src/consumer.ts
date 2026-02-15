@@ -10,12 +10,18 @@ const transporter = nodemailer.createTransport({
     // secure:true,
     service: "gmail",
     auth: {
-        user: process.env.USER,
-        pass: process.env.PASSWORD
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASSWORD
     }
 })
 
 export const startSendOtpConsumer = async () => {
+    console.log(JSON.stringify(process.env.MAIL_USER));
+    console.log(process.env.MAIL_USER,"user env");
+console.log(process.env.MAIL_PASSWORD,"password env");
+await transporter.verify();
+console.log("✅ SMTP server ready");
+
     try {
         const connection = await amqp.connect({
             protocol: "amqp",
@@ -42,7 +48,7 @@ export const startSendOtpConsumer = async () => {
                     const { to, subject, body } = JSON.parse(msg.content.toString())
                     console.log("this is inside the funciton",to,subject,body)
                     await transporter.sendMail({
-                        from: "Chat App",
+                        from: `Chatify-Chat App`,
                         to,
                         subject,
                         text: body,

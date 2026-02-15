@@ -32,6 +32,23 @@ export interface Message {
 }
 
 const Page = () => {
+  const [selectedUser, setselectedUser] = useState<string | null>(null)
+  const [message, setMessage] = useState("")
+  const [sideBarOpen, setSideBarOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
+  const [editingMessage, setEditingMessage] = useState<Message | null>(null)
+  
+  
+  const [messages, setMessages] = useState<Message[]>([])
+  const [user, setUser] = useState<User | null>(null)
+  const [typing, setTyping] = useState(false)
+  const [typingTimeOut, setTypingTimeOut] =
+    useState<NodeJS.Timeout | null>(null)
+    const isTypingRef = useRef(false);
+
   const {
     loading,
     isAuth,
@@ -43,21 +60,7 @@ const Page = () => {
   } = useAppData()
 
   const { socket, onlineUsers } = SocketData();
-
-
   const router = useRouter()
-
-  const [selectedUser, setselectedUser] = useState<string | null>(null)
-  const [message, setMessage] = useState("")
-  const [sideBarOpen, setSideBarOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null)
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-  const [editingMessage, setEditingMessage] = useState<Message | null>(null)
-
-
-  const isTypingRef = useRef(false);
 
   useEffect(() => {
     if (window.innerWidth >= 760) {
@@ -67,14 +70,6 @@ const Page = () => {
       setSideBar();
     }
   }, [])
-
-  const [messages, setMessages] = useState<Message[]>([])
-  const [user, setUser] = useState<User | null>(null)
-  const [typing, setTyping] = useState(false)
-  const [typingTimeOut, setTypingTimeOut] =
-    useState<NodeJS.Timeout | null>(null)
-
-
 
   useEffect(() => {
     if (!selectedUser || !chats) return
@@ -379,7 +374,7 @@ setMessages(prev => {
 
   return (
     <div className="h-screen flex bg-white dark:bg-black overflow-hidden">
-
+      {loading && <Loading/>}
       {/* SIDEBAR */}
       {loggedInUser && <Sidebar
         users={users}
@@ -398,15 +393,7 @@ setMessages(prev => {
 
         {/* HEADER */}
         {/* HEADER */}
-        <div className="
-      sticky top-0 z-20
-      px-4 sm:px-6 py-3
-      flex items-center justify-between
-      border-b dark:border-zinc-800
-      backdrop-blur-xl
-      bg-white/60 dark:bg-zinc-900/60
-    ">
-
+        <div className="sticky top-0 z-20 px-4 sm:px-6 py-3 flex items-center justify-between border-b dark:border-zinc-800 backdrop-blur-xl bg-white/60 dark:bg-zinc-900/60">  
           {/* LEFT */}
 
           <div className="flex items-center gap-2">
