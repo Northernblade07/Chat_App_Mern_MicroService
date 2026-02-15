@@ -7,8 +7,8 @@ import toast from "react-hot-toast";
 import { redirect, useRouter } from "next/navigation";
 import { Router } from "next/router";
 import { Flag } from "lucide-react";
-export const user_service = "http://localhost:6001";
-export const chat_service ="http://localhost:6005";
+export const user_service = "http://51.20.73.105:6001";
+export const chat_service ="http://51.20.73.105:6005";
 
 
 export interface User{
